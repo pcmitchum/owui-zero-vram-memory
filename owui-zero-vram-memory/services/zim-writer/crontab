@@ -1,0 +1,26 @@
+# =============================================================================
+# crontab — loaded into zim-writer sidecar at /scripts/crontab
+#
+# CHANGE THE SCHEDULE if needed. Default: 1st of every month at 3:00am.
+# Cron format: minute hour day-of-month month day-of-week
+#
+# CHANGE THE PATHS to match your environment:
+#   Arg 1: memory_file       — path to core_memory.txt inside OpenWebUI container
+#                              Default /app/backend/data/core_memory.txt is correct
+#                              if you haven't changed the OpenWebUI container mount point.
+#   Arg 2: staging_dir       — temp dir for HTML generation (inside container)
+#   Arg 3: output_dir        — ZIM output dir before Kiwix move (inside container)
+#   Arg 4: kiwix_library_dir — host path to your Kiwix ZIM folder
+#                              CHANGE THIS to match your KIWIX_ZIM_PATH
+#                              e.g. /data  or  /opt/kiwix/zims
+#   Arg 5: max_age_days      — entries older than this are consolidated (default: 90)
+#   Arg 6: trigger           — label for logs, leave as "cron"
+# =============================================================================
+
+0 3 1 * * /scripts/auto_consolidate.sh \
+    /app/backend/data/core_memory.txt \
+    /app/backend/data/zim_staging \
+    /app/backend/data/zim_output \
+    <CHANGE_ME: KIWIX_ZIM_PATH> \
+    90 \
+    cron >> /var/log/zim-writer.log 2>&1

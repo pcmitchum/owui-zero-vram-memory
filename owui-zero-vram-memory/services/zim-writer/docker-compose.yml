@@ -1,0 +1,65 @@
+# =============================================================================
+# services/zim-writer/docker-compose.yml
+#
+# zim-writer sidecar — packages memory entries into ZIM files for Kiwix.
+#
+# BEFORE DEPLOYING — replace every value marked with <CHANGE_ME>:
+#
+#   OPENWEBUI_DATA_PATH
+#     Host path to your OpenWebUI data directory.
+#     This is the folder mounted to /app/backend/data inside open-webui.
+#     Find it with: docker inspect open-webui | grep -A5 Mounts
+#     Example: /opt/openwebui/data
+#
+#   KIWIX_ZIM_PATH
+#     Host path to your Kiwix ZIM library folder.
+#     This must match the folder mounted into your kiwix container.
+#     Example: /opt/kiwix/zims
+#
+#   SCRIPTS_PATH
+#     Host path where convert.sh, auto_consolidate.sh, and crontab will live.
+#     Copy the three files from services/zim-writer/ into this folder.
+#     Example: /opt/zim-writer/scripts
+#
+#   NETWORK_NAME
+#     The Docker network shared between open-webui, kiwix, and zim-writer.
+#     Find existing networks with: docker network ls
+#     Example: ai-net
+#
+# DEPLOY:
+#   docker compose -f services/zim-writer/docker-compose.yml up -d
+# =============================================================================
+
+networks:
+  app-net:
+    external: true
+    name: <CHANGE_ME: NETWORK_NAME>   # e.g. ai-net
+
+services:
+  zim-writer:
+    image: ghcr.io/openzim/zim-tools:latest
+    container_name: zim-writer
+    restart: unless-stopped
+
+    networks:
+      - app-net
+
+    volumes:
+      # OpenWebUI data directory — shares core_memory.txt with open-webui
+      - <CHANGE_ME: OPENWEBUI_DATA_PATH>:/app/backend/data
+
+      # Kiwix ZIM library — ZIMs are moved here after consolidation
+      # Must be the same path mounted into your kiwix container
+      - <CHANGE_ME: KIWIX_ZIM_PATH>:<CHANGE_ME: KIWIX_ZIM_PATH>
+
+      # Scripts directory — contains convert.sh, auto_consolidate.sh, crontab
+      - <CHANGE_ME: SCRIPTS_PATH>:/scripts
+
+    # Loads crontab and starts cron daemon on container start
+    entrypoint: ["/bin/sh", "-c", "crontab /scripts/crontab && crond -f -l 6"]
+
+    # zimwriterfs is CPU-only — no GPU needed
+    deploy:
+      resources:
+        limits:
+          memory: 512M
